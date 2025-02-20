@@ -1,3 +1,30 @@
+# dependencies
+```
+conda deactivate
+conda create -y -n jan14.2
+conda activate jan14.2
+conda install -y pytorch::pytorch torchvision torchaudio -c pytorch
+pip install transformers
+pip install sentencepiece
+
+# clone and run
+cd ~
+git clone https://github.com/yaroslavvb/olmo-core.git
+cd ~/OLMo-core
+git checkout standalone
+pip install -e .
+NUM_NODES=1 LOCAL_RANK=0 RANK=0 WORLD_SIZE=1 MASTER_ADDR=127.0.0.1 MASTER_PORT=6016 python src/examples/llama/train.py unique_run_name
+```
+
+## Get the source
+```
+cd ~
+git clone https://github.com/togethercomputer/olmo-core.git
+cd ~/OLMo-core
+
+# Original README
+--------------------------------
+
 <div align="center">
   <h1>OLMo-core</h1>
   <p>Building blocks for OLMo modeling and training</p>
@@ -11,6 +38,7 @@
   <a href="https://github.com/allenai/OLMo-core/blob/main/LICENSE">License</a> ||
   <a href="https://github.com/allenai/OLMo-core/blob/main/CHANGELOG.md">Changelog</a>
 </p>
+
 
 ## Installation
 

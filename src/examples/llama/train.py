@@ -73,7 +73,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     )
 
     dataset_config = NumpyDatasetConfig.glob(
-        "/net/nfs/allennlp/llm-data/c4/en/c4-train.*.npy",  # can be globs
+        "random1024.npy",  # can be globs
         name=NumpyDatasetType.fsl,
         sequence_length=1024,
         max_target_sequence_length=8192,
@@ -139,29 +139,6 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         )
         .with_callback("config_saver", ConfigSaverCallback())
         .with_callback("profiler", ProfilerCallback(enabled=False))
-        .with_callback(
-            "lm_evaluator",
-            LMEvaluatorCallbackConfig(
-                eval_dataset=NumpyDatasetConfig(
-                    paths=["/net/nfs/allennlp/llm-data/c4/en/c4-validation.00000-00008.npy"],
-                    metadata=[{"label": "c4-validation"}],
-                    name=NumpyDatasetType.padded_fsl,
-                    sequence_length=1024,
-                    tokenizer=tokenizer_config,
-                    work_dir="/tmp/dataset-cache",
-                ),
-                eval_interval=250,
-                eval_duration=Duration.steps(10),
-            ),
-        )
-        .with_callback(
-            "downstream_evaluator",
-            DownstreamEvaluatorCallbackConfig(
-                tasks=["hellaswag"],
-                tokenizer=tokenizer_config,
-                eval_interval=250,
-            ),
-        )
     )
 
     return ExperimentConfig(
