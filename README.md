@@ -21,6 +21,7 @@ NUM_NODES=1 LOCAL_RANK=0 RANK=0 WORLD_SIZE=1 MASTER_ADDR=127.0.0.1 MASTER_PORT=6
 cd ~
 git clone https://github.com/togethercomputer/olmo-core.git
 cd ~/OLMo-core
+```
 
 # Original README
 --------------------------------
