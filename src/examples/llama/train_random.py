@@ -85,7 +85,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     )
 
     dataset_config = NumpyDatasetConfig.glob(
-        "random1024-*.npy",  # can be globs
+        "random1024.npy",  # can be globs
         name=NumpyDatasetType.fsl,
         sequence_length=1024,
         max_target_sequence_length=8192,
