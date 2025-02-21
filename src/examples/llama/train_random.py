@@ -54,6 +54,137 @@ import os
 data_root = "/tmp"
 data_root = os.environ.get("HOME") + "/olmo-tmp"
 
+
+from olmo_core.aliases import PathOrStr
+from olmo_core.data import DataCollator, DataLoaderBase
+
+
+import random
+from typing import Any, Dict, Iterable, List, Optional
+
+import torch
+
+class CustomDataLoader(DataLoaderBase):
+    """
+    An example custom data loader that generates random token IDs.
+    """
+
+    def __init__(
+        self,
+        *,
+        sequence_length: int,
+        vocab_size: int,
+        work_dir: PathOrStr,
+        global_batch_size: int,
+        dp_world_size: int = 1,
+        dp_rank: int = 0,
+        fs_local_rank: int = 0,
+        seed: int = 0,
+        total_batches: int = 2048,
+    ):
+        super().__init__(
+            collator=DataCollator(pad_token_id=vocab_size - 1),
+            work_dir=work_dir,
+            global_batch_size=global_batch_size,
+            dp_world_size=dp_world_size,
+            dp_rank=dp_rank,
+            fs_local_rank=fs_local_rank,
+        )
+        assert self.rank_batch_size % sequence_length == 0
+        self.sequence_length = sequence_length
+        self.vocab_size = vocab_size
+        self.seed = seed
+        self._total_batches = total_batches
+        self._dataset: Optional[List[torch.Tensor]]
+
+    @property
+    def total_batches(self) -> int:
+        return self._total_batches
+
+    def state_dict(self) -> Dict[str, Any]:
+        return {
+            "batches_processed": self.batches_processed,
+            "seed": self.seed,
+            "epoch": self._epoch,
+        }
+
+    def load_state_dict(self, state_dict: Dict[str, Any]):
+        self.batches_processed = state_dict["batches_processed"]
+        self.seed = state_dict["seed"]
+        self._epoch = state_dict["epoch"]
+
+    def reshuffle(self, epoch: Optional[int] = None, **kwargs):
+        del kwargs  # unused
+
+        # Set current epoch.
+        if epoch is None:
+            epoch = 1 if self._epoch is None else self._epoch + 1
+        self._epoch = epoch
+
+        # Generate data.
+        rng = random.Random(self.seed + self.epoch)
+        instances_per_batch = self.global_batch_size // self.sequence_length
+        total_instances = instances_per_batch * self.total_batches
+        self._dataset = [
+            torch.arange(start=start_idx, end=start_idx + self.sequence_length)
+            for start_idx in (
+                rng.randint(0, self.vocab_size - self.sequence_length - 2)
+                for _ in range(total_instances)
+            )
+        ]
+
+    def get_mock_batch(self) -> Dict[str, Any]:
+        num_instances = self.rank_batch_size // self.sequence_length
+        input_ids = torch.randint(0, self.vocab_size, (num_instances, self.sequence_length))
+        return {"input_ids": input_ids}
+
+    def _iter_batches(self) -> Iterable[Dict[str, Any]]:
+        assert self._dataset is not None, "did you forget to call 'reshuffle()'?"
+
+        # Get global batch instance indices. Shape: (total batches, instances per batch)
+        instances_per_batch = self.global_batch_size // self.sequence_length
+        indices = torch.arange(len(self._dataset)).view(self.total_batches, instances_per_batch)
+
+        # Offset by batches processed so far.
+        indices = indices[self.batches_processed :]
+
+        for batch_indices in indices:
+            # Slice batch indices up by rank to create data parallel micro-batches.
+            local_batch_indices = batch_indices[self.dp_rank :: self.dp_world_size]
+            yield self.collator([self._dataset[idx] for idx in local_batch_indices])
+
+@dataclass
+class CustomDataLoaderConfig(NumpyDataLoaderConfig):
+
+    global_batch_size: int
+    seed: int
+    work_dir: Optional[str] = None
+    num_threads: Optional[int] = None
+    num_workers: int = 0
+    prefetch_factor: Optional[int] = None
+    target_device_type: Optional[str] = None
+    sequence_length: Optional[int] = None
+    vocab_size: Optional[int] = None
+
+    def build(
+        self,
+        dataset,
+        *,
+        collator = None,
+        mesh = None,
+        dp_process_group = None,
+        sequence_length = None,
+        vocab_size = None,
+    ):
+        return CustomDataLoader(
+            sequence_length=self.sequence_length,
+            vocab_size=self.vocab_size,
+            work_dir=self.work_dir,
+            global_batch_size=self.global_batch_size,
+            seed=self.seed,
+        )
+    
+
 @dataclass
 class ExperimentConfig(Config):
     model: TransformerConfig
@@ -97,8 +228,10 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         work_dir=data_root+"/dataset-cache",
     )
 
-    data_loader_config = NumpyDataLoaderConfig(
+    data_loader_config = CustomDataLoaderConfig(
         global_batch_size=256 * 1024,
+        sequence_length=1024,
+        vocab_size=tokenizer_config.padded_vocab_size(),
         seed=0,
         num_workers=4,
     )
