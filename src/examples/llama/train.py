@@ -42,6 +42,14 @@ from olmo_core.train.callbacks import (
 from olmo_core.utils import get_default_device, seed_all
 
 
+# modify default checkpointer to not save post-train checkpoint
+class NoPostTrainCheckpointer(CheckpointerCallback):
+    def post_train(self):
+        print("Skipping post-train checkpoint")
+        pass
+
+checkpointer_callback = NoPostTrainCheckpointer(save_interval=1000, pre_train_checkpoint=False, ephemeral_save_interval=100, save_async=True)
+
 @dataclass
 class ExperimentConfig(Config):
     model: TransformerConfig
@@ -115,11 +123,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         .with_callback("grad_clipper", GradClipperCallback(max_grad_norm=1.0))
         .with_callback(
             "checkpointer",
-            CheckpointerCallback(
-                save_interval=1000,
-                ephemeral_save_interval=100,
-                save_async=True,
-            ),
+            checkpointer_callback
         )
         .with_callback(
             "comet",
