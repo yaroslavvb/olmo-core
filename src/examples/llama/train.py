@@ -48,7 +48,11 @@ class NoPostTrainCheckpointer(CheckpointerCallback):
         print("Skipping post-train checkpoint")
         pass
 
-checkpointer_callback = NoPostTrainCheckpointer(save_interval=1000, pre_train_checkpoint=False, ephemeral_save_interval=100, save_async=True)
+checkpointer_callback = NoPostTrainCheckpointer(save_interval=99999999, pre_train_checkpoint=False, ephemeral_save_interval=9999999, save_async=True)
+
+import os
+data_root = "/tmp"
+data_root = os.environ.get("HOME") + "/olmo-tmp"
 
 @dataclass
 class ExperimentConfig(Config):
@@ -90,7 +94,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         #  min_sequence_length=256,
         #  vsl_curriculum=VSLCurriculumConfig(name=VSLCurriculumType.grow_p2, num_cycles=4),
         tokenizer=tokenizer_config,
-        work_dir="/tmp/dataset-cache",
+        work_dir=data_root+"/dataset-cache",
     )
 
     data_loader_config = NumpyDataLoaderConfig(
@@ -101,7 +105,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
 
     trainer_config = (
         TrainerConfig(
-            save_folder=f"/tmp/{run_name}",
+            save_folder=f"{data_root}/{run_name}",
             rank_microbatch_size=16 * 1024,
             save_overwrite=True,
             metrics_collect_interval=5,
