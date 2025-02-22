@@ -23,6 +23,16 @@ git clone https://github.com/togethercomputer/olmo-core.git
 cd ~/OLMo-core
 ```
 
+## Multi-GPU training
+
+```
+export script=src/examples/llama/train_random.py
+export run=21feb25-7
+python -m torch.distributed.run --nproc_per_node=2 $script $run
+# https://wandb.ai/yaroslavvb/OLMo-core-src_examples_llama/runs/1sxyz96z
+```
+
+
 # Original README
 --------------------------------
 

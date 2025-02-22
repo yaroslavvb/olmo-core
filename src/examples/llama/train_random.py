@@ -40,6 +40,7 @@ from olmo_core.train.callbacks import (
     WandBCallback,
 )
 from olmo_core.utils import get_default_device, seed_all
+from olmo_core.distributed.utils import get_world_size, get_rank, get_fs_local_rank
 
 
 # modify default checkpointer to not save post-train checkpoint
@@ -181,6 +182,9 @@ class CustomDataLoaderConfig(NumpyDataLoaderConfig):
             vocab_size=self.vocab_size,
             work_dir=self.work_dir,
             global_batch_size=self.global_batch_size,
+            dp_world_size=get_world_size(dp_process_group),
+            dp_rank=get_rank(dp_process_group),
+            fs_local_rank=get_fs_local_rank(),
             seed=self.seed,
         )
     
