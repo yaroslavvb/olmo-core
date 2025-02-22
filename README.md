@@ -23,6 +23,12 @@ git clone https://github.com/togethercomputer/olmo-core.git
 cd ~/OLMo-core
 ```
 
+## Single-node 8 GPU Llama 8B
+```
+python -m torch.distributed.run --nproc_per_node=8 src/examples/llama/train_random_8B.py 21feb25-6
+
+https://wandb.ai/yaroslavvb/OLMo-core-src_examples_llama/runs/lsld2fri
+```
 ## Mult-node 2 GPU training
 
 ```
@@ -33,6 +39,7 @@ python -m torch.distributed.run --nproc_per_node=1 --nnodes=2 --node_rank=0 --ma
 # on other node
 python -m torch.distributed.run --nproc_per_node=1 --nnodes=2 --node_rank=1 --master_addr=$node1 --master_port=1234 $script $run
 
+# https://wandb.ai/yaroslavvb/OLMo-core-src_examples_llama/runs/ustr7l1r
 ```
 
 

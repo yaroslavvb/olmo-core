@@ -202,13 +202,11 @@ class ExperimentConfig(Config):
 def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     tokenizer_config = TokenizerConfig.gpt2()
 
-    model_config = TransformerConfig.llama2_271M(
-        vocab_size=tokenizer_config.padded_vocab_size(),  # a little bigger than actual vocab size to make it a multiple of 128
+    model_config = TransformerConfig.llama3_8B(
+        vocab_size=tokenizer_config.padded_vocab_size(),
         compile=True,
-        fused_ops=False,
-        use_flash=False,
         dp_config=TransformerDataParallelConfig(
-            name=DataParallelType.fsdp, param_dtype=DType.bfloat16, reduce_dtype=DType.float32
+            name=DataParallelType.hsdp, param_dtype=DType.bfloat16, reduce_dtype=DType.float32
         ),
     )
 
@@ -229,7 +227,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     )
 
     data_loader_config = CustomDataLoaderConfig(
-        global_batch_size=256 * 1024,
+        global_batch_size=128 * 1024,
         sequence_length=1024,
         vocab_size=tokenizer_config.padded_vocab_size(),
         seed=0,
@@ -239,7 +237,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     trainer_config = (
         TrainerConfig(
             save_folder=f"{data_root}/{run_name}",
-            rank_microbatch_size=16 * 1024,
+            rank_microbatch_size=8 * 1024,
             save_overwrite=True,
             metrics_collect_interval=5,
             cancel_check_interval=5,
