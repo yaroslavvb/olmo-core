@@ -215,15 +215,11 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
         ],
     )
 
-    dataset_config = NumpyDatasetConfig.glob(
+    dummy_dataset_config = NumpyDatasetConfig.glob(
         "random1024.npy",  # can be globs
         name=NumpyDatasetType.fsl,
         sequence_length=1024,
         max_target_sequence_length=8192,
-        #  name=NumpyDatasetType.vsl,
-        #  max_sequence_length=2048,
-        #  min_sequence_length=256,
-        #  vsl_curriculum=VSLCurriculumConfig(name=VSLCurriculumType.grow_p2, num_cycles=4),
         tokenizer=tokenizer_config,
         work_dir=data_root+"/dataset-cache",
     )
@@ -285,7 +281,7 @@ def build_config(run_name: str, overrides: List[str]) -> ExperimentConfig:
     return ExperimentConfig(
         model=model_config,
         optim=optim_config,
-        dataset=dataset_config,
+        dataset=dummy_dataset_config,
         data_loader=data_loader_config,
         trainer=trainer_config,
     ).merge(overrides)
