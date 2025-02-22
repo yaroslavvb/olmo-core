@@ -23,7 +23,20 @@ git clone https://github.com/togethercomputer/olmo-core.git
 cd ~/OLMo-core
 ```
 
-## Multi-GPU training
+## Mult-node 2 GPU training
+
+```
+export OLMO_SHARED_FS=1
+export script=src/examples/llama/train_random.py
+python -m torch.distributed.run --nproc_per_node=1 --nnodes=2 --node_rank=0 --master_addr=$node1 --master_port=1234 $script $run
+
+# on other node
+python -m torch.distributed.run --nproc_per_node=1 --nnodes=2 --node_rank=1 --master_addr=$node1 --master_port=1234 $script $run
+
+```
+
+
+## Single-node 2-GPU training
 
 ```
 export script=src/examples/llama/train_random.py
